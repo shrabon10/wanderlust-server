@@ -2,11 +2,18 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const dotenv = require('dotenv');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 dotenv.config();
 const PORT = process.env.PORT || 5000;
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true,
+//   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
 app.use(express.json());
+
 
 const uri = process.env.MONGO_URI;
 
@@ -23,6 +30,48 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
+
+    const db = client.db("wanderlust");
+    const destinationsCollection = db.collection("destinations");
+
+    app.get('/destinations', async (req, res) =>{
+        const result = await destinationsCollection.find().toArray();
+        res.json(result);
+    })
+
+    app.post('/destinations', async (req, res) =>{
+        const destination = req.body;
+        console.log(destination);
+        const result = await destinationsCollection.insertOne(destination);
+        res.json(result);
+    })
+        app.patch("/destinations/:id", async (req, res) => {
+        const { id } = req.params;
+        const updatedData = req.body;
+
+        delete updatedData._id;
+
+        const result = await destinationsCollection.updateOne(
+            { _id: new ObjectId(id) },
+            {
+            $set: updatedData,
+            }
+        );
+
+        res.json(result);
+        console.log(result);
+        });
+
+    app.get('/destinations/:id', async (req, res) =>{
+        const { id } = req.params;
+        const result = await destinationsCollection.findOne({_id: new ObjectId(id)});
+        res.json(result);
+    });
+
+
+
+
+
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } catch (error) {
@@ -30,7 +79,7 @@ async function run() {
   }
   finally {
     // Ensures that the client will close when you finish/error
-    await client.close();
+    // await client.close();
   }
 }
 
