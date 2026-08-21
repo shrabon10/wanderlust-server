@@ -34,8 +34,20 @@ async function run() {
     const db = client.db("wanderlust");
     const destinationsCollection = db.collection("destinations");
 
+    app.get('/featured', async (req, res) =>{
+        const result = await destinationsCollection.find().limit(9).toArray();
+        res.json(result)
+    })
+
     app.get('/destinations', async (req, res) =>{
         const result = await destinationsCollection.find().toArray();
+        res.json(result);
+    })
+
+
+    app.delete('/destinations/:id', async (req, res) => {
+        const {id} = req.params;
+        const result = await destinationsCollection.deleteOne({_id: new ObjectId(id)})
         res.json(result);
     })
 
